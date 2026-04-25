@@ -1,0 +1,6 @@
+json_repair_ios is inspired by the Python project mangiucugna/json_repair:
+
+https://github.com/mangiucugna/json_repair
+
+The upstream project is distributed under the MIT License. This Swift package is
+a native implementation for Apple platforms and is not a line-by-line copy.
