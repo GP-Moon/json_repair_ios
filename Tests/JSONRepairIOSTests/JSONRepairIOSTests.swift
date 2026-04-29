@@ -75,6 +75,45 @@ final class JSONRepairIOSTests: XCTestCase {
         XCTAssertEqual(decoded, Payload(name: "Pokebot", enabled: false))
     }
 
+    func testDecodeCollapsesExtraRootArrayWrappersWhenTypedDecodeFails() throws {
+        struct Payload: Decodable, Equatable {
+            var name: String
+            var enabled: Bool
+        }
+
+        let decoded = try JSONRepair.decode(Payload.self, from: #"[[[{"name":"Pokebot","enabled":true}]]]"#)
+
+        XCTAssertEqual(decoded, Payload(name: "Pokebot", enabled: true))
+    }
+
+    func testDecodeCollapsesExtraArrayWrappersAroundArrayFieldsWhenTypedDecodeFails() throws {
+        struct Payload: Decodable, Equatable {
+            var title: String
+            var topics: [String]
+            var retrievalTerms: [String]
+        }
+
+        let decoded = try JSONRepair.decode(
+            Payload.self,
+            from: #"{"title":"LLM Wiki","topics":[[["LLM","RAG"]]],"retrievalTerms":[["LLM Wiki"]]}"#
+        )
+
+        XCTAssertEqual(
+            decoded,
+            Payload(
+                title: "LLM Wiki",
+                topics: ["LLM", "RAG"],
+                retrievalTerms: ["LLM Wiki"]
+            )
+        )
+    }
+
+    func testRepairPreservesValidNestedArraysWithoutTypedDecodeContext() throws {
+        let repaired = try JSONRepair.repair(#"{"topics":[["LLM","RAG"]]}"#)
+
+        XCTAssertEqual(repaired, #"{"topics":[["LLM","RAG"]]}"#)
+    }
+
     func testPrettyPrintsWhenRequested() throws {
         let repaired = try JSONRepair.repair("{b:2,a:1}", options: JSONRepairOptions(prettyPrinted: true, sortKeys: true))
         XCTAssertEqual(
